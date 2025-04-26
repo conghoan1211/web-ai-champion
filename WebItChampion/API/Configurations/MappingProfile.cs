@@ -14,6 +14,10 @@ namespace API.Configurations
             CreateMap<User, ProfileVM>();
             CreateMap<User, UpdateProfileModels>();
             CreateMap<User, UserLoginVM>();
+
+            // Topic mapping
+            CreateMap<Topic, TopicVM>();
+            CreateMap<Topic, CreateUpdateTopicVM>();
         }
     }
 }
