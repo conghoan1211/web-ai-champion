@@ -43,7 +43,6 @@ namespace API.Common
             }
             return Regex.Replace(text, @"\s+", "");
         }
-
         public static string HashMD5(this string text)
         {
             StringBuilder sBuilder = new StringBuilder();
@@ -58,42 +57,6 @@ namespace API.Common
             }
             return sBuilder.ToString();
         }
-
-        public static bool Match(this string text, string compareText)
-        {
-            string text1 = text.Standardizing().Trim();
-            string text2 = compareText.Standardizing().Trim();
-            return text1.Contains(text2) || text2.Contains(text1);
-        }
-
-        public static string ToStringDDMMYYYY(this DateTime obj, string defaultvalue)
-        {
-            return obj.ToStringCustomFormat("dd/MM/yyyy", defaultvalue);
-        }
-
-        public static string ToStringDDMMYYYY24H(this DateTime obj, string defaultvalue)
-        {
-            return obj.ToStringCustomFormat("dd/MM/yyyy HH:mm:ss", defaultvalue);
-        }
-
-        /// xóa khoảng trắng 2 bên
-        public static string RemoveExtraSpaces(this string s)
-        {
-            if (s == null)
-                return null;
-            return string.Join(" ", s.Split(new string[] { " " }, StringSplitOptions.RemoveEmptyEntries));
-        }
-
-        public static DateTime ConvertToDateTime(this string text)
-        {
-            DateTime result;
-            if (!DateTime.TryParse(text, out result))
-            {
-                result = DateTime.FromOADate(double.Parse(text));
-            }
-            return result;
-        }
-
         public static string StringToMD5(string? s, out string value)
         {
             value = null;
@@ -131,7 +94,65 @@ namespace API.Common
 
             return result;
         }
+        public static string SanitizeJsonString(string input)
+        {
+            if (string.IsNullOrWhiteSpace(input))
+                return input;
 
+            input = input.Trim();
+
+            // Nếu bao toàn bộ bằng ```json ... ``` thì bỏ đi
+            if (input.StartsWith("```json") && input.EndsWith("```"))
+            {
+                input = input.Substring(7, input.Length - 10).Trim();
+            }
+
+            // Xóa các ký tự lạ đầu/cuối nếu còn
+            while (input.Length > 0 && (input[0] == '`' || input[0] == '.' || input[0] == '\''))
+            {
+                input = input.Substring(1).TrimStart();
+            }
+            while (input.Length > 0 && (input[^1] == '`' || input[^1] == '.' || input[^1] == '\''))
+            {
+                input = input.Substring(0, input.Length - 1).TrimEnd();
+            }
+            return input;
+        }
+
+        public static bool Match(this string text, string compareText)
+        {
+            string text1 = text.Standardizing().Trim();
+            string text2 = compareText.Standardizing().Trim();
+            return text1.Contains(text2) || text2.Contains(text1);
+        }
+
+        public static string ToStringDDMMYYYY(this DateTime obj, string defaultvalue)
+        {
+            return obj.ToStringCustomFormat("dd/MM/yyyy", defaultvalue);
+        }
+
+        public static string ToStringDDMMYYYY24H(this DateTime obj, string defaultvalue)
+        {
+            return obj.ToStringCustomFormat("dd/MM/yyyy HH:mm:ss", defaultvalue);
+        }
+
+        /// xóa khoảng trắng 2 bên
+        public static string RemoveExtraSpaces(this string s)
+        {
+            if (s == null)
+                return null;
+            return string.Join(" ", s.Split(new string[] { " " }, StringSplitOptions.RemoveEmptyEntries));
+        }
+
+        public static DateTime ConvertToDateTime(this string text)
+        {
+            DateTime result;
+            if (!DateTime.TryParse(text, out result))
+            {
+                result = DateTime.FromOADate(double.Parse(text));
+            }
+            return result;
+        }
         public static string ReveserString(this string value)
         {
             if (string.IsNullOrEmpty(value))

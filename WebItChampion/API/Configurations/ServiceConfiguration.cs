@@ -24,7 +24,10 @@ namespace API.Configurations
             services.AddScoped<IAmazonS3Service, AmazonS3Service>();
             services.AddScoped<IProfileService, ProfileService>();
             services.AddScoped<ITopicService, TopicService>();
-
+            services.AddScoped<ISkillCoreService, SkillCoreService>();
+            services.AddScoped<IAIQuizGeneratorService, AIQuizGeneratorService>();
+            services.AddScoped<ISkillGeneratorService, SkillGeneratorService>();
+        
         }
     }
 }

@@ -4,6 +4,7 @@ using API.Models;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -11,9 +12,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace API.Migrations
 {
     [DbContext(typeof(Sep490Context))]
-    partial class Sep490ContextModelSnapshot : ModelSnapshot
+    [Migration("20250426122035_updateStudentskillTable")]
+    partial class updateStudentskillTable
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -355,16 +358,9 @@ namespace API.Migrations
                     b.Property<DateTime?>("UpdateAt")
                         .HasColumnType("datetime2");
 
-                    b.Property<string>("UserID")
-                        .IsRequired()
-                        .HasMaxLength(36)
-                        .HasColumnType("nvarchar(36)");
-
                     b.HasKey("QuizID");
 
                     b.HasIndex("TopicID");
-
-                    b.HasIndex("UserID");
 
                     b.ToTable("Quizzes");
                 });
@@ -598,12 +594,6 @@ namespace API.Migrations
 
                     b.HasIndex("UserId");
 
-                    b.HasIndex("SkillID", "TopicID");
-
-                    b.HasIndex("SkillName", "TopicID")
-                        .IsUnique()
-                        .HasFilter("[TopicID] IS NOT NULL");
-
                     b.ToTable("StudentSkills");
                 });
 
@@ -730,9 +720,6 @@ namespace API.Migrations
                         .HasColumnType("nvarchar(100)");
 
                     b.HasKey("TopicID");
-
-                    b.HasIndex("TopicName")
-                        .IsUnique();
 
                     b.ToTable("Topics");
                 });
@@ -1063,15 +1050,7 @@ namespace API.Migrations
                         .WithMany("Quizzes")
                         .HasForeignKey("TopicID");
 
-                    b.HasOne("API.Models.User", "User")
-                        .WithMany("Quizzes")
-                        .HasForeignKey("UserID")
-                        .OnDelete(DeleteBehavior.NoAction)
-                        .IsRequired();
-
                     b.Navigation("Topic");
-
-                    b.Navigation("User");
                 });
 
             modelBuilder.Entity("API.Models.QuizQuestion", b =>
@@ -1326,8 +1305,6 @@ namespace API.Migrations
                     b.Navigation("QuestionHistories");
 
                     b.Navigation("QuizSubmissions");
-
-                    b.Navigation("Quizzes");
 
                     b.Navigation("SkillProgresses");
 

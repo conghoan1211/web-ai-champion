@@ -98,4 +98,18 @@ namespace API.Helper
         Assistant,
         System,
     }
+
+    public enum DifficultyLevel
+    {
+        Easy = 0,
+        Medium,
+        Hard,
+        VeryHard,
+    }
+
+    public enum QuestionType
+    {
+        Essay = 0,
+        MultipleChoice,
+    }
 }

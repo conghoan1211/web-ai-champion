@@ -106,6 +106,9 @@ namespace API.Services
             }
             else
             {
+                var existedName = await _context.Topics.FirstOrDefaultAsync(x => x.TopicName == input.TopicName);
+                if (existedName != null) return "Topic name already exists!";
+
                 var newTopic = new Topic
                 {
                     TopicName = input.TopicName,

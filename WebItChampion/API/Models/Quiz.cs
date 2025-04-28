@@ -26,9 +26,17 @@ namespace API.Models
 
         public DateTime? UpdateAt { get; set; }
 
+        [Required]
+        [StringLength(36)]
+        public string UserID { get; set; } = null!;  // Ai tạo quiz này
+
         // Navigation properties
         [ForeignKey("TopicID")]
-        public virtual Topic Topic { get; set; } = new Topic();
+        public virtual Topic? Topic { get; set; }
+
+        [ForeignKey("UserID")]
+        public virtual User? User { get; set; }  
+
         public virtual ICollection<QuizQuestion> Questions { get; set; } = new List<QuizQuestion>();
         public virtual ICollection<QuizSubmission> Submissions { get; set; } = new List<QuizSubmission>();
         public virtual ICollection<LearningProgress> LearningProgresses { get; set; } = new List<LearningProgress>();

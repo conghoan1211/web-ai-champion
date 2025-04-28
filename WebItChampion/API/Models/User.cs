@@ -50,12 +50,13 @@ public partial class User
     // Navigation properties
     public virtual ICollection<LearningProgress> LearningProgresses { get; set; } = new List<LearningProgress>();
     public virtual ICollection<SubmissionCode> Submissions { get; set; } = new List<SubmissionCode>();
+    public virtual ICollection<Quiz> Quizzes { get; set; } = new List<Quiz>();  
     public virtual ICollection<QuizSubmission> QuizSubmissions { get; set; } = new List<QuizSubmission>();
     public virtual ICollection<StudentSkillProgress> SkillProgresses { get; set; }  = new List<StudentSkillProgress>();
     public virtual ICollection<UserQuestionHistory> QuestionHistories { get; set; } = new List<UserQuestionHistory>();
     public virtual ICollection<SocialPost> SocialPosts { get; set; } = new List<SocialPost>();
     public virtual ICollection<SocialComment> SocialComments { get; set; } = new List<SocialComment>();
-    public virtual ICollection<SocialLike> SocialLikes { get; set; }
+    public virtual ICollection<SocialLike> SocialLikes { get; set; } = new List<SocialLike>();
     public virtual ICollection<Notification> Notifications { get; set; } = new List<Notification>();
     public virtual ICollection<Leaderboard> Leaderboards { get; set; } = new List<Leaderboard>();
     public virtual ICollection<StudentSkill> Classes { get; set; } = new List<StudentSkill>();

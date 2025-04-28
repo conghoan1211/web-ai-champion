@@ -119,6 +119,12 @@ namespace API.Models
                 .WithMany(u => u.UserDailyUsages)
                 .HasForeignKey(u => u.UserId)
                 .OnDelete(DeleteBehavior.Cascade);
+
+            modelBuilder.Entity<Quiz>()
+                .HasOne(q => q.User)  
+                .WithMany(u => u.Quizzes)  
+                .HasForeignKey(q => q.UserID)
+                .OnDelete(DeleteBehavior.NoAction); // <-- Không cascade delete
         }
     }
 }

@@ -1,8 +1,12 @@
 ﻿using System.ComponentModel.DataAnnotations.Schema;
 using System.ComponentModel.DataAnnotations;
+using System.ComponentModel;
+using Microsoft.EntityFrameworkCore;
 
 namespace API.Models
 {
+    [Index(nameof(SkillName), nameof(TopicID), IsUnique = true)]
+    [Index(nameof(SkillID), nameof(TopicID))]
     public class StudentSkill
     {
         [Key]
@@ -17,6 +21,9 @@ namespace API.Models
         public string? Description { get; set; }
 
         public int? TopicID { get; set; }
+
+        [DefaultValue(false)]
+        public bool IsCoreSkill { get; set; } = false;             
 
         public DateTime CreateAt { get; set; } = DateTime.Now;
 
