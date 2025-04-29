@@ -27,7 +27,7 @@ namespace API.Models
 
         // Navigation properties
         [ForeignKey("TopicID")]
-        public virtual Topic Topic { get; set; }
+        public virtual Topic? Topic { get; set; }
         public virtual ICollection<SubmissionCode> Submissions { get; set; } = new List<SubmissionCode>();
         public virtual ICollection<LearningProgress> LearningProgresses { get; set; } = new List<LearningProgress>();
      //   public virtual ICollection<LearningPathItem> LearningPathItems { get; set; } = new List<LearningPathItem>();

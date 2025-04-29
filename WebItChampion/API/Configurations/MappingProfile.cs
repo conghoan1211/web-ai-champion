@@ -26,6 +26,11 @@ namespace API.Configurations
             CreateMap<StudentSkill, CreateUpdateSkillVM>();
 
 
+            // Quiz mapping
+            CreateMap<Quiz, QuizVM>();
+
+            // QuizQuestion mapping
+            CreateMap<QuizQuestion, QuizQuestionVM>();
 
 
         }

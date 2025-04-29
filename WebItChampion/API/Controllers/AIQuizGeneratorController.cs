@@ -6,7 +6,7 @@ namespace API.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
-    public class AIQuizGeneratorController : ControllerBase
+    public class AIQuizGeneratorController : BaseController
     {
         private readonly IAIQuizGeneratorService _aiQuizService;
 
@@ -18,7 +18,8 @@ namespace API.Controllers
         [HttpPost("GenerateQuizFromSkills")]
         public async Task<IActionResult> GenerateQuizFromSkills([FromForm] GenerateQuizRequest input)
         {
-            var (message, questions) = await _aiQuizService.GenerateQuizFromSkills(input.NumberQuestion, input.TopicId, input.Skills, input.UserId, input.Difficulty);
+            input.UserId = GetUserId();
+            var (message, questions) = await _aiQuizService.GenerateQuizFromSkills(input);
             if (message.Length > 0)
             {
                 return BadRequest(new { success = false, message });

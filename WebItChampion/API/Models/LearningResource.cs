@@ -30,7 +30,7 @@ namespace API.Models
 
         // Navigation properties
         [ForeignKey("TopicID")]
-        public virtual Topic Topic { get; set; } = new Topic();
+        public virtual Topic? Topic { get; set; } 
       //  public virtual ICollection<LearningPathItem> LearningPathItems { get; set; }
     }
 }

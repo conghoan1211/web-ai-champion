@@ -20,10 +20,10 @@ namespace API.Models
         public DateTime CreateAt { get; set; } = DateTime.Now;
 
         [ForeignKey("ClassID")]
-        public virtual Class Class { get; set; } = new Class();
+        public virtual Class? Class { get; set; } 
 
         [ForeignKey("QuizID")]
-        public virtual Quiz Quiz { get; set; } = new Quiz();
+        public virtual Quiz? Quiz { get; set; }  
 
     }
 }

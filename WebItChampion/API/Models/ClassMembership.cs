@@ -26,6 +26,6 @@ namespace API.Models
         public virtual Class Class { get; set; } = null!;
 
         [ForeignKey("StudentID")]
-        public virtual User Student { get; set; } = new User();
+        public virtual User? Student { get; set; } 
     }
 }

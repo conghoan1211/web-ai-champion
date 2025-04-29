@@ -7,13 +7,12 @@ using Microsoft.EntityFrameworkCore;
 using Newtonsoft.Json;
 using System.Text;
 using API.Common;
-using RabbitMQ.Client.Framing.Impl;
 
 namespace API.Services
 {
     public interface IAIQuizGeneratorService
     {
-        public Task<(string, List<GeneratedQuestionVM>?)> GenerateQuizFromSkills(int numberQuestion, int topicId, List<string>? skills, string userId, string difficulty = "easy");
+        public Task<(string, List<GeneratedQuestionVM>?)> GenerateQuizFromSkills(GenerateQuizRequest input);
         public Task<string> GenerateQuizFromWeakSkillsAsync(string userId, int numberQuestion, string difficulty = "medium");
 
     }
@@ -42,32 +41,31 @@ namespace API.Services
 
         #endregion
 
-        public async Task<(string, List<GeneratedQuestionVM>?)> GenerateQuizFromSkills(int numberQuestion, int topicId, List<string>? skills, string userId, string difficulty)
+        public async Task<(string, List<GeneratedQuestionVM>?)> GenerateQuizFromSkills(GenerateQuizRequest input)
         {
             // Validate inputs
-            if (numberQuestion <= 0 || numberQuestion > 60)
+            if (input.NumberQuestion <= 0 || input.NumberQuestion > 60)
                 throw new Exception("Number of questions must be greater than 0 and less than 60");
-            if (string.IsNullOrEmpty(userId))
+            if (string.IsNullOrEmpty(input.UserId))
                 throw new Exception("UserID is required.");
-            if (skills == null || !skills.Any())
+            if (input.Skills == null || !input.Skills.Any())
                 throw new Exception("Skills list cannot be empty.");
-            if (skills.Count > numberQuestion)
+            if (input.Skills.Count > input.NumberQuestion)
                 throw new Exception("Number of skills cannot exceed number of questions.");
 
             // Validate skills and their topics
-            var validSkills = await _context.StudentSkills.Include(s => s.Topic).Where(s => skills.Contains(s.SkillName) && s.TopicID == topicId).ToListAsync();
-
-            if (validSkills.Count != skills.Count)
+            var validSkills = await _context.StudentSkills.Include(s => s.Topic).Where(s => input.Skills.Contains(s.SkillName) && s.TopicID == input.TopicId).ToListAsync();
+            if (validSkills.Count != input.Skills.Count)
             {
-                var notFoundSkills = skills.Except(validSkills.Select(s => s.SkillName)).ToList();
-                return ($"Invalid skill: {string.Join(", ", notFoundSkills)} does not exist or does not belong to TopicID {topicId}.", null);
+                var notFoundSkills = input.Skills.Except(validSkills.Select(s => s.SkillName)).ToList();
+                return ($"Invalid skill: {string.Join(", ", notFoundSkills)} does not exist or does not belong to TopicID {input.TopicId}.", null);
             }
 
             var prompt = string.Format(GeneratedQuizForNewUserPrompt,
-                numberQuestion,
+                input.NumberQuestion,
                 validSkills.First().Topic.TopicName,
-                string.Join(", ", skills).Trim(),
-                difficulty);
+                string.Join(", ", input.Skills).Trim(),
+                input.Difficulty);
 
             var generatedQuiz = await CallGeminiApiAsync(prompt);
             if (generatedQuiz == null || !generatedQuiz.Any())
@@ -75,15 +73,13 @@ namespace API.Services
 
             //⛔ GroupBy + First() tạm thời "che" lỗi trùng dữ liệu để không crash.
             var skillProgress = await _context.StudentSkillProgresses.Include(x => x.User)
-              .Where(sp => sp.UserID == userId && validSkills.Select(s => s.SkillID).Contains(sp.SkillID))
+              .Where(sp => sp.UserID == input.UserId && validSkills.Select(s => s.SkillID).Contains(sp.SkillID))
               .GroupBy(sp => sp.SkillID)
               .Select(g => g.First()) // lấy 1 dòng duy nhất cho mỗi SkillID
               .ToDictionaryAsync(sp => sp.SkillID, sp => sp);
 
-            var msg = await SaveQuizToDatabaseAsync(
-                $"Custom Quiz for {skillProgress.First().Value.User.Username}",
-                "Quiz based on student-selected skills",
-                generatedQuiz, topicId, userId,
+            var msg = await SaveQuizToDatabaseAsync( input.Title, input.Description, generatedQuiz,
+                input.TopicId, input.UserId,
                 skillProgress, validSkills);
             if (msg.Length > 0) return (msg, null);
 

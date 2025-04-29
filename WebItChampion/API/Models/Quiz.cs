@@ -1,8 +1,10 @@
 ﻿using System.ComponentModel.DataAnnotations.Schema;
 using System.ComponentModel.DataAnnotations;
+using Microsoft.EntityFrameworkCore;
 
 namespace API.Models
 {
+    [Index(nameof(Title), IsUnique = true)]
     public class Quiz
     {
         [Key]
@@ -10,9 +12,10 @@ namespace API.Models
         public string QuizID { get; set; } = null!;
 
         [Required]
-        [StringLength(255)]
+        [StringLength(100)]
         public string? Title { get; set; }
 
+        [StringLength(300)]
         public string? Description { get; set; }
 
         [Required]
@@ -21,6 +24,8 @@ namespace API.Models
         public int? TopicID { get; set; }
 
         public int? TimeLimit { get; set; }
+
+        public int Status { get; set; } = 1; // 0: Private, 1: Public, 2: Hide, 3: Deleted 
 
         public DateTime CreateAt { get; set; } = DateTime.Now;
 

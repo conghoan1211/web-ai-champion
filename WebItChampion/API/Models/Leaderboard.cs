@@ -27,6 +27,6 @@ namespace API.Models
 
         // Navigation properties
         [ForeignKey("UserID")]
-        public virtual User User { get; set; } = new User();
+        public virtual User? User { get; set; }  
     }
 }

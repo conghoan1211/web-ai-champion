@@ -32,12 +32,12 @@ namespace API.Models
 
         // Navigation properties
         [ForeignKey("UserID")]
-        public virtual User User { get; set; } = new User();
+        public virtual User User { get; set; } 
 
         [ForeignKey("ExerciseID")]
-        public virtual ExerciseCode Exercise { get; set; } = new ExerciseCode();
+        public virtual ExerciseCode Exercise { get; set; } 
 
         [ForeignKey("QuizID")]
-        public virtual Quiz Quiz { get; set; } = new Quiz();
+        public virtual Quiz Quiz { get; set; }  
     }
 }
