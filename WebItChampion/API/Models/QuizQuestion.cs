@@ -14,6 +14,10 @@ namespace API.Models
         public string QuizID { get; set; } = null!;
 
         [Required]
+        [StringLength(36)]
+        public string SkillID { get; set; } = null!;
+
+        [Required]
         public string? Content { get; set; }
 
         [Required]
@@ -38,6 +42,10 @@ namespace API.Models
         // Navigation properties
         [ForeignKey("QuizID")]
         public virtual Quiz Quiz { get; set; } = null!;
+
+        [ForeignKey("SkillID")]
+        public virtual StudentSkill Skill { get; set; } = null!;
+
         public virtual ICollection<QuizSubmission> Submissions { get; set; } = new List<QuizSubmission>();
         public virtual ICollection<UserQuestionHistory> QuestionHistories { get; set; } = new List<UserQuestionHistory>();
     }

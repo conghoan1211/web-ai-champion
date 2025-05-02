@@ -18,11 +18,15 @@ namespace API.Models
 
         [Required]
         public int Rank { get; set; }
-
+  
         [Required]
         [StringLength(50)]
         public string? Period { get; set; }
 
+        public int TotalQuizzes { get; set; }
+        public float AccuracyRate { get; set; }
+        public DateTime PeriodStart { get; set; }
+        public DateTime PeriodEnd { get; set; }
         public DateTime UpdateAt { get; set; } = DateTime.Now;
 
         // Navigation properties

@@ -101,21 +101,25 @@ namespace API.Common
 
             input = input.Trim();
 
-            // Nếu bao toàn bộ bằng ```json ... ``` thì bỏ đi
-            if (input.StartsWith("```json") && input.EndsWith("```"))
+            // Tìm đoạn giữa ```json và ```
+            int startIndex = input.IndexOf("```json");
+            int endIndex = input.LastIndexOf("```");
+
+            if (startIndex != -1 && endIndex != -1 && endIndex > startIndex)
             {
-                input = input.Substring(7, input.Length - 10).Trim();
+                // Lấy phần nằm giữa ```json và ```
+                input = input.Substring(startIndex + 7, endIndex - (startIndex + 7)).Trim();
+            }
+            else
+            {
+                // Nếu không có ```json thì tìm đoạn JSON bắt đầu bằng [
+                int jsonStart = input.IndexOf('[');
+                if (jsonStart >= 0)
+                {
+                    input = input.Substring(jsonStart).Trim();
+                }
             }
 
-            // Xóa các ký tự lạ đầu/cuối nếu còn
-            while (input.Length > 0 && (input[0] == '`' || input[0] == '.' || input[0] == '\''))
-            {
-                input = input.Substring(1).TrimStart();
-            }
-            while (input.Length > 0 && (input[^1] == '`' || input[^1] == '.' || input[^1] == '\''))
-            {
-                input = input.Substring(0, input.Length - 1).TrimEnd();
-            }
             return input;
         }
 

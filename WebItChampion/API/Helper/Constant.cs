@@ -76,7 +76,7 @@ namespace API.Helper
 
     public enum DifficultyLevel
     {
-        Easy = 0,
+        Easy = 1,
         Medium,
         Hard,
         VeryHard,
@@ -94,5 +94,14 @@ namespace API.Helper
         Public = 1, 
         Hide = 2,
         Deleted = 3,
+    }
+
+    public enum SkillLevel
+    {
+        Beginner = 0,
+        Elementary,
+        Intermediate,
+        Advanced,
+        Expert,
     }
 }

@@ -36,7 +36,7 @@ namespace API.Services
         private readonly string GeneratedQuizForNewUserPrompt =
                     @"Tạo một bài kiểm tra python trắc nghiệm tiếng Việt có {0} câu hỏi dựa trên chủ đề {1} theo các kĩ năng sau:
                     {2}
-                    Độ khó của câu hỏi: {3} 
+                    Độ khó của câu hỏi: {3} .với mức độ khó tăng dần và mức độ (3) chiếm 80%,
                     Định dạng: Danh sách JSON với các trường: SkillName, Question, 4 Options (list), CorrectAnswer, Explanation.";
 
         #endregion
@@ -60,6 +60,8 @@ namespace API.Services
                 var notFoundSkills = input.Skills.Except(validSkills.Select(s => s.SkillName)).ToList();
                 return ($"Invalid skill: {string.Join(", ", notFoundSkills)} does not exist or does not belong to TopicID {input.TopicId}.", null);
             }
+            bool quizExists = await _context.Quizzes.AnyAsync(q => q.Title == input.Title);
+            if (quizExists) return ($"Tiêu đề quiz đã tồn tại. Vui lòng nhập tiêu đề khác.", null);
 
             var prompt = string.Format(GeneratedQuizForNewUserPrompt,
                 input.NumberQuestion,
@@ -71,53 +73,14 @@ namespace API.Services
             if (generatedQuiz == null || !generatedQuiz.Any())
                 return ("AI Gemini API didn't return quiz questions.", null);
 
-            //⛔ GroupBy + First() tạm thời "che" lỗi trùng dữ liệu để không crash.
-            var skillProgress = await _context.StudentSkillProgresses.Include(x => x.User)
-              .Where(sp => sp.UserID == input.UserId && validSkills.Select(s => s.SkillID).Contains(sp.SkillID))
-              .GroupBy(sp => sp.SkillID)
-              .Select(g => g.First()) // lấy 1 dòng duy nhất cho mỗi SkillID
-              .ToDictionaryAsync(sp => sp.SkillID, sp => sp);
-
-            var msg = await SaveQuizToDatabaseAsync( input.Title, input.Description, generatedQuiz,
+            var msg = await SaveQuizToDatabaseAsync(input.Title, input.Description, generatedQuiz,
                 input.TopicId, input.UserId,
-                skillProgress, validSkills);
+                input.Difficulty, validSkills);
             if (msg.Length > 0) return (msg, null);
 
             return ("", generatedQuiz);
         }
 
-        // 2. Generate Quiz dựa trên kỹ năng yếu
-        public async Task<string> GenerateQuizFromWeakSkillsAsync(string userId, int numberQuestion, string difficulty = "medium")
-        {
-            var weakSkills = _context.StudentSkillProgresses
-                .Where(p => p.UserID == userId && (p.ProficiencyScore < 70 || p.ProbabilityKnown < 0.7))
-                .Join(_context.StudentSkills,
-                      progress => progress.SkillID,
-                      skill => skill.SkillID,
-                      (progress, skill) => new
-                      {
-                          skill.SkillID,
-                          skill.SkillName,
-                          skill.Description
-                      })
-                .ToList();
-
-            if (!weakSkills.Any())
-                throw new Exception("No weak skills found for user!");
-
-            var SkillList = string.Join("\n", weakSkills.Select(x => $"- {x.SkillName}: {x.Description}"));
-
-            var prompt = string.Format(GeneratedQuizForNewUserPrompt, SkillList.Trim(), difficulty);
-
-            var generatedQuiz = await CallGeminiApiAsync(prompt);
-
-            if (generatedQuiz == null || !generatedQuiz.Any())
-                throw new Exception("Gemini API didn't return quiz questions.");
-
-            //var message = await SaveQuizToDatabaseAsync("Skill Improvement Quiz", "Quiz based on weak skills", generatedQuiz);
-
-            return "message";
-        }
 
         private async Task<List<GeneratedQuestionVM>?> CallGeminiApiAsync(string prompt)
         {
@@ -154,9 +117,8 @@ namespace API.Services
         // Helper: Save Quiz + Questions vào Database
         private async Task<string> SaveQuizToDatabaseAsync(string title, string description,
             List<GeneratedQuestionVM> questions, int topicId, string userId,
-            Dictionary<string, StudentSkillProgress> skillProgress, List<StudentSkill> validSkills)
+            string difficulty, List<StudentSkill> validSkills)
         {
-            string difficulty = "easy";
             await using var transaction = await _context.Database.BeginTransactionAsync(); // Mở transaction
             try
             {
@@ -164,54 +126,40 @@ namespace API.Services
                 var quiz = new Quiz
                 {
                     QuizID = quizId,
-                    Title = title,
+                    Title = title.Trim(),
                     UserID = userId,
                     TopicID = topicId,
                     Description = description,
-                    DifficultyLevel = Enum.TryParse<DifficultyLevel>(difficulty, true, out var diffEnum) ? (int)diffEnum : 1,
-                    TimeLimit = questions.Count > 0 ? questions.Count + 5 : 0, // Thời gian theo phút 
+                    DifficultyLevel = Enum.TryParse<DifficultyLevel>(difficulty, true, out var diffEnum) ? (int)diffEnum : 0,
+                    TimeLimit = questions.Count > 0 ? questions.Count + 5 : 0,
                     CreateAt = DateTime.UtcNow,
                 };
                 _context.Quizzes.Add(quiz);
 
+                var quizQuestions = new List<QuizQuestion>();
+                var addedSkillIds = new HashSet<string>();
+
                 foreach (var q in questions)
                 {
                     var matchedSkill = validSkills.FirstOrDefault(s => s.SkillName.Equals(q.SkillName, StringComparison.OrdinalIgnoreCase));
-                    var progress = matchedSkill != null && skillProgress.ContainsKey(matchedSkill.SkillID) ? skillProgress[matchedSkill.SkillID] : null;
+                    var skillId = matchedSkill.SkillID;
 
-                    var question = new QuizQuestion
+                    quizQuestions.Add(new QuizQuestion
                     {
                         QuestionID = Guid.NewGuid().ToString(),
                         QuizID = quizId,
+                        SkillID = skillId,
                         Content = q.Question,
                         QuestionType = (int)QuestionType.Essay,
                         Options = JsonConvert.SerializeObject(q.Options),
                         CorrectAnswer = q.CorrectAnswer,
                         Explanation = q.Explanation,
-                        DifficultyLevel = Enum.TryParse<DifficultyLevel>(difficulty, true, out diffEnum) ? (int)diffEnum : 1,
+                        DifficultyLevel = (int)diffEnum,
                         CreateAt = DateTime.UtcNow,
                         IsAICreated = true
-                    };
-                    _context.QuizQuestions.Add(question);
-
-                    // Initialize StudentSkillProgress if no progress exists
-                    if (progress == null)
-                    {
-                        var newProgress = new StudentSkillProgress
-                        {
-                            ProgressID = Guid.NewGuid().ToString(),
-                            UserID = userId,
-                            SkillID = matchedSkill.SkillID,
-                            ProficiencyScore = 0,
-                            SkillLevel = 1,
-                            LastUpdated = DateTime.UtcNow,
-                            ProbabilityKnown = 0,
-                            Attempts = 0,
-                            SuccessRate = 0
-                        };
-                        _context.StudentSkillProgresses.Add(newProgress);
-                    }
+                    });
                 }
+                _context.QuizQuestions.AddRange(quizQuestions);
 
                 // Link to class if specified
                 //if (!string.IsNullOrEmpty(classId))
@@ -235,5 +183,39 @@ namespace API.Services
                 return ($"Lỗi : {ex.Message} \n - {ex.InnerException}");
             }
         }
+
+        // 2. Generate Quiz dựa trên kỹ năng yếu
+        public async Task<string> GenerateQuizFromWeakSkillsAsync(string userId, int numberQuestion, string difficulty = "medium")
+        {
+            var weakSkills = _context.StudentSkillProgresses
+                .Where(p => p.UserID == userId && (p.ProficiencyScore < 70 || p.ProbabilityKnown < 0.7))
+                .Join(_context.StudentSkills,
+                      progress => progress.SkillID,
+                      skill => skill.SkillID,
+                      (progress, skill) => new
+                      {
+                          skill.SkillID,
+                          skill.SkillName,
+                          skill.Description
+                      })
+                .ToList();
+
+            if (!weakSkills.Any())
+                throw new Exception("No weak skills found for user!");
+
+            var SkillList = string.Join("\n", weakSkills.Select(x => $"- {x.SkillName}: {x.Description}"));
+
+            var prompt = string.Format(GeneratedQuizForNewUserPrompt, SkillList.Trim(), difficulty);
+
+            var generatedQuiz = await CallGeminiApiAsync(prompt);
+
+            if (generatedQuiz == null || !generatedQuiz.Any())
+                throw new Exception("Gemini API didn't return quiz questions.");
+
+            //var message = await SaveQuizToDatabaseAsync("Skill Improvement Quiz", "Quiz based on weak skills", generatedQuiz);
+
+            return "message";
+        }
+
     }
 }

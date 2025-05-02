@@ -29,6 +29,8 @@ namespace API.Configurations
             services.AddScoped<ISkillGeneratorService, SkillGeneratorService>();
             services.AddScoped<IQuizQuestionService, QuizQuestionService>();
             services.AddScoped<IQuizService, QuizService>();
+            services.AddScoped<IQuizSubmissionService, QuizSubmissionService>();
+            services.AddScoped<ILeaderboardService, LeaderboardService>();
 
         }
     }

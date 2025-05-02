@@ -31,7 +31,7 @@ namespace API.Services
             var list = await _context.Quizzes
                 .Where(x => topicId.Contains(x.TopicID.Value) && (!difficulty.HasValue || x.DifficultyLevel == difficulty)
                 && x.Status != (int)QuizStatus.Deleted).ToListAsync();
-            if (list.Count == 0) return ("Topic is not available!", null);
+            if (list.Count == 0) return ("No quiz found!", null);
 
             var mapper = _mapper.Map<List<QuizVM>>(list);
             return ("", mapper);
@@ -43,7 +43,7 @@ namespace API.Services
 
             var quiz = await _context.Quizzes.FirstOrDefaultAsync(x => x.QuizID == quizId 
                 && x.Status != (int)QuizStatus.Deleted);
-            if (quiz == null) return ("Quiz is not available!", null);
+            if (quiz == null) return ("No quiz found!", null);
 
             var mapper = _mapper.Map<QuizVM>(quiz);
             return ("", mapper);

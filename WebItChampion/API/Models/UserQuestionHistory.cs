@@ -1,8 +1,10 @@
 ﻿using System.ComponentModel.DataAnnotations.Schema;
 using System.ComponentModel.DataAnnotations;
+using Microsoft.EntityFrameworkCore;
 
 namespace API.Models
 {
+    [Index(nameof(UserID), nameof(SkillID))]
     public class UserQuestionHistory
     {
         [Key]

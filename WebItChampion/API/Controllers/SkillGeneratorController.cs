@@ -28,7 +28,7 @@ namespace API.Controllers
         [HttpPost("GenerateSkillFromWeakSkills")]
         public async Task<IActionResult> GenerateSkillFromWeakSkills(int topicId, string studentId, int numberSkill)
         {
-            var (message, skills) = await _skillGeneratedService.GenerateSkillFromTopic(topicId, studentId, numberSkill);
+            var (message, skills) = await _skillGeneratedService.GenerateSkillFromTopic (topicId, studentId, numberSkill);
             if (message.Length > 0)
             {
                 return BadRequest(new { success = false, message });

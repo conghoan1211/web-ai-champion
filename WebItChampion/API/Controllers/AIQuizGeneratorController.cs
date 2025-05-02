@@ -15,6 +15,12 @@ namespace API.Controllers
             _aiQuizService = aiQuizService;
         }
 
+        /// <summary>
+        /// Generate quiz from skills
+        /// Difficulty: easy, medium, hard, veryhard
+        /// </summary>
+        /// <param name="input"></param>
+        /// <returns></returns>
         [HttpPost("GenerateQuizFromSkills")]
         public async Task<IActionResult> GenerateQuizFromSkills([FromForm] GenerateQuizRequest input)
         {
@@ -27,8 +33,7 @@ namespace API.Controllers
             return Ok(new { success = true, message = "Tạo quiz thành công.", data = questions });
         }
 
-        /// <summary>
-        /// 
+        /// <summary
         /// This api is erroring
         /// 
         /// </summary>
