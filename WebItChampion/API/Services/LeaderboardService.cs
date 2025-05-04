@@ -7,7 +7,7 @@ namespace API.Services
 {
     public interface ILeaderboardService
     {
-       public Task<(string, List<LeaderboardVM>?, LeaderboardVM?)> GetTopLeaderboard(string userId, string period, int page = 1, int pageSize = 20);
+        public Task<(string, List<LeaderboardVM>?, LeaderboardVM?)> GetTopLeaderboard(string userId, string? period, int page = 1, int pageSize = 20);
     }
     public class LeaderboardService : ILeaderboardService
     {
@@ -16,7 +16,7 @@ namespace API.Services
         {
             _context = context;
         }
-        public async Task<(string, List<LeaderboardVM>?, LeaderboardVM?)> GetTopLeaderboard(string userId, string period, int page = 1, int pageSize = 20)
+        public async Task<(string, List<LeaderboardVM>?, LeaderboardVM?)> GetTopLeaderboard(string userId, string? period, int page = 1, int pageSize = 20)
         {
             if (string.IsNullOrEmpty(userId)) return ("User ID was not found", null, null);
 
@@ -26,14 +26,16 @@ namespace API.Services
                 "daily" => now,
                 "weekly" => now.AddDays(-(int)now.DayOfWeek),
                 "monthly" => new DateTime(now.Year, now.Month, 1),
-                "all" => null, // không lọc theo thời gian
+                "all" => null,
                 _ => null
             };
 
             int skip = (page - 1) * pageSize;
             var topList = await _context.Leaderboards.Include(x => x.User)
-                .Where(l => period == "all" || (l.Period == period && l.PeriodStart == periodStart))
-                .OrderByDescending(l => l.Score)
+                .Where(l =>
+                    (period == "all" && l.Period == "all") ||
+                    (period != "all" && l.Period == period && l.PeriodStart == periodStart)
+                ).OrderByDescending(l => l.Score)
                 .ThenBy(l => l.UpdateAt)
                 .Skip(skip)
                 .Take(pageSize)
@@ -52,12 +54,14 @@ namespace API.Services
                 })
                 .ToListAsync();
 
-            var isInPage = topList.Any(x => x.UserID == userId);  
+            var isInPage = topList.Any(x => x.UserID == userId);
             LeaderboardVM? currentUser = null;
             if (!isInPage)
             {
                 currentUser = await _context.Leaderboards.Include(x => x.User)
-                    .Where(l => l.Period == period && l.PeriodStart == periodStart && l.UserID == userId)
+                    .Where(l => (period == "all" && l.Period == "all") ||
+                    (period != "all" && l.Period == period && l.PeriodStart == periodStart)
+                           && l.UserID == userId)
                     .Select(l => new LeaderboardVM
                     {
                         Avatar = l.User.Avatar,

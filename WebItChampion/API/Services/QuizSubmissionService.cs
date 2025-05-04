@@ -11,8 +11,7 @@ namespace API.Services
     {
         public Task<string> ProcessQuizSubmission(QuizSubmissionRequest submissionRequest);
         Task UpdateAllSkillProgress(string userId, List<QuizSubmission> submissions, List<QuizQuestion> questions);
-        Task UpdateLeaderboard(string userId, string quizId);
-        Task RecalculateLeaderboardRanks(string periodType, DateTime periodStart);
+        Task UpdateLeaderboard(string userId, string quizId, int questionCount);
         //Task UpdateLearningProgress(string userId, string quizId);
     }
     public class QuizSubmissionService : IQuizSubmissionService
@@ -89,14 +88,13 @@ namespace API.Services
                 await _context.QuizSubmissions.AddRangeAsync(userSubmissions);
                 await _context.QuestionHistories.AddRangeAsync(histories);
 
+                await _context.SaveChangesAsync();  // Needed before UpdateLeaderboard
+                
                 await UpdateAllSkillProgress(submissionRequest.UserId, userSubmissions, questions);
-
-                await UpdateLeaderboard(submissionRequest.UserId, submissionRequest.QuizId);
+                await UpdateLeaderboard(submissionRequest.UserId, submissionRequest.QuizId, questions.Count());
                 //await UpdateLearningProgress(submissionRequest.UserId, submissionRequest.QuizId);
 
-                await _context.SaveChangesAsync();
                 await transaction.CommitAsync();
-
                 return "";
             }
             catch (Exception ex)
@@ -130,10 +128,10 @@ namespace API.Services
                 var attempts = skillGroup.ToList();
 
                 // Filter preloaded histories for this skill
-                var recentHistories = allRecentHistories
+                var recent = allRecentHistories
                     .Where(h => h.SkillID == skillId)
                     .OrderByDescending(h => h.SubmitAt)
-                    .Take(10)
+                    .Take(20)
                     .ToList();
 
                 var progress = await _context.StudentSkillProgresses
@@ -146,7 +144,7 @@ namespace API.Services
                         ProgressID = Guid.NewGuid().ToString(),
                         UserID = userId,
                         SkillID = skillId,
-                        ProficiencyScore = 1500, // Elo baseline
+                        ProficiencyScore = 1000, // Elo baseline
                         ProbabilityKnown = 0.1f,
                         SuccessRate = 0,
                         SkillLevel = (int)SkillLevel.Beginner,
@@ -155,16 +153,22 @@ namespace API.Services
                     };
                     _context.StudentSkillProgresses.Add(progress);
                 }
+
+
                 // Update attempts and proficiency (Elo-based)
                 foreach (var att in attempts)
                 {
                     progress.Attempts += 1;
                     var question = att.Question;
                     var submission = att.Submission;
+                    var difficultyMap = new Dictionary<float, float>
+                        {
+                            { 1, 1000 }, { 2, 1100 }, { 3, 1200 }, { 4, 1400 }, { 5, 1600 }, { 6, 1800 }
+                        };
 
                     // Elo update for ProficiencyScore
-                    int kFactor = progress.Attempts < 30 ? 32 : 16;
-                    float expected = (float)(1.0 / (1.0 + Math.Pow(10, (question.DifficultyLevel - progress.ProficiencyScore.Value) / 400.0)));
+                    int kFactor = progress.Attempts < 10 ? 100 : progress.Attempts < 30 ? 50 : 25; // Higher kFactor for early attempts
+                    float expected = (float)(1.0 / (1.0 + Math.Pow(10, (difficultyMap[question.DifficultyLevel] - progress.ProficiencyScore.Value) / 400.0)));
                     progress.ProficiencyScore += kFactor * (submission.IsCorrect ? 1 - expected : 0 - expected);
 
                     // Bayesian Knowledge Tracing (BKT) cho ProbabilityKnown
@@ -195,7 +199,7 @@ namespace API.Services
                 }
 
                 progress.SuccessRate = recent.Any()
-                    ? (float)recent.Count(h => h.IsCorrect == true) / recent.Count * 100
+                    ? (float?)recent.Count(h => h.IsCorrect == true) / recent.Count * 100
                     : 0;
 
                 // Update SkillLevel based on ProficiencyScore (Elo scale)
@@ -216,7 +220,7 @@ namespace API.Services
         /// Update Leaderboard after a quiz submission. 
         ///  Tính tổng điểm từ các bài thi (QuizSubmissions), và xếp hạng theo tổng điểm.
         /// </summary>
-        public async Task UpdateLeaderboard(string userId, string quizId)
+        public async Task UpdateLeaderboard(string userId, string quizId, int questionCount)
         {
             try
             {
@@ -229,10 +233,11 @@ namespace API.Services
                 // Define leaderboard periods
                 var periods = new[]
                 {
-                    new { Type = "daily", Start = now, End = now.AddDays(1).AddTicks(-1) },
-                    new { Type = "weekly", Start = now.AddDays(-(int)now.DayOfWeek), End = now.AddDays(7 - (int)now.DayOfWeek).AddTicks(-1) },
-                    new { Type = "monthly", Start = new DateTime(now.Year, now.Month, 1), End = new DateTime(now.Year, now.Month, 1).AddMonths(1).AddTicks(-1) }
-                };
+                        new { Type = "daily", Start = now, End = now.AddDays(1).AddTicks(-1) },
+                        new { Type = "weekly", Start = now.AddDays(-(int)now.DayOfWeek), End = now.AddDays(7 - (int)now.DayOfWeek).AddTicks(-1) },
+                        new { Type = "monthly", Start = new DateTime(now.Year, now.Month, 1), End = new DateTime(now.Year, now.Month, 1).AddMonths(1).AddTicks(-1) },
+                        new { Type = "all", Start = DateTime.MinValue, End = DateTime.MaxValue }
+                    };
 
                 var affectedLeaderboards = new List<(string PeriodType, DateTime PeriodStart)>();
 
@@ -260,7 +265,7 @@ namespace API.Services
                         };
                         _context.Leaderboards.Add(entry);
                     }
-                    entry.TotalQuizzes += 1;
+                    entry.TotalQuizzes += questionCount;
                     entry.AccuracyRate = (entry.AccuracyRate * (entry.TotalQuizzes - 1) + quizScore) / entry.TotalQuizzes;
                     entry.Score += quizScore;
                     entry.UpdateAt = DateTime.UtcNow;
@@ -287,10 +292,10 @@ namespace API.Services
         /// <param name="periodType"></param>
         /// <param name="periodStart"></param>
         /// <returns></returns>
-        public async Task RecalculateLeaderboardRanks(string periodType, DateTime periodStart)
+        private async Task RecalculateLeaderboardRanks(string periodType, DateTime periodStart)
         {
             var leaderboards = await _context.Leaderboards
-                .Where(l => l.Period == periodType && l.PeriodStart == periodStart)
+                .Where(l => l.Period == periodType && (periodType == "all" || l.PeriodStart == periodStart))
                 .OrderByDescending(l => l.Score)
                 .ThenBy(l => l.UpdateAt) // optional tie-breaker
                 .ToListAsync();

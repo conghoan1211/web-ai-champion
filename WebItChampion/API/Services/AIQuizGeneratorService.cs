@@ -35,7 +35,7 @@ namespace API.Services
 
         private readonly string GeneratedQuizForNewUserPrompt =
                     @"Tạo một bài kiểm tra python trắc nghiệm tiếng Việt có {0} câu hỏi dựa trên chủ đề {1} theo các kĩ năng sau:
-                    {2}
+                    {2}. (Lưu ý: giữ nguyên tên kĩ năng và không được thay đổi)
                     Độ khó của câu hỏi: {3} .với mức độ khó tăng dần và mức độ (3) chiếm 80%,
                     Định dạng: Danh sách JSON với các trường: SkillName, Question, 4 Options (list), CorrectAnswer, Explanation.";
 

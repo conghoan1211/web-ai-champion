@@ -15,7 +15,7 @@ namespace API.Controllers
         }
 
         [HttpGet("GetTopLeaderboard")]
-        public async Task<IActionResult> GetTopLeaderboard(string period, int page = 1, int pageSize = 20)
+        public async Task<IActionResult> GetTopLeaderboard(string? period, int page = 1, int pageSize = 20)
         {
             string userId = GetUserId();
             var (message, topList, currentUser) = await _leaderboardService.GetTopLeaderboard(userId, period, page, pageSize);
