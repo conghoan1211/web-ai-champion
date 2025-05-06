@@ -21,8 +21,6 @@ namespace API.Models
         [Required]
         public int DifficultyLevel { get; set; }
 
-        public int? TopicID { get; set; }
-
         public int? TimeLimit { get; set; }
 
         public int Status { get; set; } = 1; // 0: Private, 1: Public, 2: Hide, 3: Deleted 
@@ -35,13 +33,10 @@ namespace API.Models
         [StringLength(36)]
         public string UserID { get; set; } = null!;  // Ai tạo quiz này
 
-        // Navigation properties
-        [ForeignKey("TopicID")]
-        public virtual Topic? Topic { get; set; }
-
         [ForeignKey("UserID")]
-        public virtual User? User { get; set; }  
+        public virtual User? User { get; set; }
 
+        public virtual ICollection<QuizTopic> QuizTopics { get; set; } = new List<QuizTopic>();
         public virtual ICollection<QuizQuestion> Questions { get; set; } = new List<QuizQuestion>();
         public virtual ICollection<QuizSubmission> Submissions { get; set; } = new List<QuizSubmission>();
         public virtual ICollection<LearningProgress> LearningProgresses { get; set; } = new List<LearningProgress>();

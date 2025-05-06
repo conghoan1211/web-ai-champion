@@ -71,6 +71,12 @@ namespace API.Common
                 return ex.ToString();
             }
         }
+        public static string Normalize(string input)
+        {
+            return input.Trim().ToLowerInvariant().Normalize(NormalizationForm.FormD)
+                .Where(c => CharUnicodeInfo.GetUnicodeCategory(c) != UnicodeCategory.NonSpacingMark)
+                .Aggregate("", (s, c) => s + c);
+        }
         public static string BytesToMD5(byte[] bytes, out string value)
         {
             string result = "";

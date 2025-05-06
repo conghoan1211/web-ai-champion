@@ -80,6 +80,7 @@ namespace API.Services
                         Score = score,
                         DifficultyLevel = question.DifficultyLevel,
                         SubmitAt = DateTime.UtcNow,
+                        IsAIGenerated = question.IsAICreated, 
                         TimeTaken = 0 // TODO: Implement if needed
                     };
                     histories.Add(history);

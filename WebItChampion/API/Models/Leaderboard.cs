@@ -1,8 +1,11 @@
 ﻿using System.ComponentModel.DataAnnotations.Schema;
 using System.ComponentModel.DataAnnotations;
+using Microsoft.EntityFrameworkCore;
 
 namespace API.Models
 {
+    [Index(nameof(Period), nameof(PeriodStart), nameof(Score))]
+    [Index(nameof(Period), nameof(UserID), nameof(PeriodStart))]
     public class Leaderboard
     {
         [Key]

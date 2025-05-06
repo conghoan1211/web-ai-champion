@@ -14,8 +14,8 @@ namespace API.Controllers
             _skillGeneratedService = skillGeneratedService;
         }
 
-        [HttpPost("GenerateSkill")]
-        public async Task<IActionResult> GenerateSkill(string userId, int numberSkill)
+        [HttpPost("GenerateSkillFromAnswers")]
+        public async Task<IActionResult> GenerateSkillFromAnswers(string userId, int numberSkill)
         {
             var (message, skills) = await _skillGeneratedService.GenerateSkillFromAnswers(userId);
             if (message.Length > 0)
@@ -25,8 +25,8 @@ namespace API.Controllers
             return Ok(new { success = true, message = "Tạo kỹ năng thành công.", data = skills });
         }
 
-        [HttpPost("GenerateSkillFromWeakSkills")]
-        public async Task<IActionResult> GenerateSkillFromWeakSkills(int topicId, string studentId, int numberSkill)
+        [HttpPost("GenerateSkillFromTopic")]
+        public async Task<IActionResult> GenerateSkillFromTopic(int topicId, string studentId, int numberSkill)
         {
             var (message, skills) = await _skillGeneratedService.GenerateSkillFromTopic (topicId, studentId, numberSkill);
             if (message.Length > 0)

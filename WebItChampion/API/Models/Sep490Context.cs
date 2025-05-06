@@ -29,6 +29,8 @@ namespace API.Models
         public DbSet<Class> Classes { get; set; }
         public DbSet<ClassMembership> ClassMemberships { get; set; }
         public DbSet<ClassQuiz> ClassQuizzes { get; set; }
+        public DbSet<QuizTopic> QuizTopics { get; set; }
+
         //public DbSet<LearningPath> LearningPaths { get; set; }
         //public DbSet<LearningPathItem> LearningPathItems { get; set; }
         public DbSet<UserDailyUsage> UserDailyUsages { get; set; }
@@ -125,6 +127,17 @@ namespace API.Models
                 .WithMany(u => u.Quizzes)  
                 .HasForeignKey(q => q.UserID)
                 .OnDelete(DeleteBehavior.NoAction); // <-- Không cascade delete
+
+            modelBuilder.Entity<QuizTopic>()
+                .HasOne(qt => qt.Quiz)
+                .WithMany(q => q.QuizTopics)
+                .HasForeignKey(qt => qt.QuizID);
+
+            modelBuilder.Entity<QuizTopic>()
+                .HasOne(qt => qt.Topic)
+                .WithMany(t => t.QuizTopics)
+                .HasForeignKey(qt => qt.TopicID);
+
         }
     }
 }

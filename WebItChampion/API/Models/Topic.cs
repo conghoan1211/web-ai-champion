@@ -22,7 +22,7 @@ namespace API.Models
 
         // Navigation properties
         public virtual ICollection<ExerciseCode> Exercises { get; set; } = new List<ExerciseCode>();
-        public virtual ICollection<Quiz> Quizzes { get; set; } = new List<Quiz>();
+        public virtual ICollection<QuizTopic> QuizTopics { get; set; } = new List<QuizTopic>();
         public virtual ICollection<LearningResource> LearningResources { get; set; } = new List<LearningResource>();
         public virtual ICollection<StudentSkill> StudentSkills { get; set; } = new List<StudentSkill>();
     }

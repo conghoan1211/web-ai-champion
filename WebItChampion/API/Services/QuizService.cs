@@ -3,6 +3,7 @@ using API.Models;
 using API.ViewModels;
 using AutoMapper;
 using Microsoft.EntityFrameworkCore;
+using System.Collections.Generic;
 
 namespace API.Services
 {
@@ -11,7 +12,7 @@ namespace API.Services
         public Task<(string, List<QuizVM>?)> GetListByTopicId(List<int> topicId, int? difficulty);
         public Task<(string, QuizVM?)> GetByQuizId(string quizId);
         public Task<(string, List<QuizVM>?)> GetAll();
-        public Task<(string, QuizVM?)> GetByUserId(string userId);
+        public Task<(string, List<QuizVM>?)> GetByUserId(string userId);
     }
     public class QuizService : IQuizService
     {
@@ -24,13 +25,38 @@ namespace API.Services
             _mapper = mapper;
         }
 
-        public async Task<(string, List<QuizVM>?)> GetListByTopicId(List<int> topicId, int? difficulty)
+        public async Task<(string, List<QuizVM>?)> GetListByTopicId(List<int> topicIds, int? difficulty)
         {
-            if (topicId.Count <= 0) return ("Topic Id was not found!", null);
+            if (topicIds.Count <= 0) return ("Topic Id was not found!", null);
 
+            //var list = await _context.QuizTopics
+            //    .Where(qt => topicIds.Contains(qt.TopicID) && qt.IsDeleted == false && qt.IsActive == true)
+            //    .Select(qt => qt.Quiz)
+            //    .Where(q => q.Status != (int)QuizStatus.Deleted && (!difficulty.HasValue || q.DifficultyLevel == difficulty))
+            //    .Distinct()
+            //    .ToListAsync();
             var list = await _context.Quizzes
-                .Where(x => topicId.Contains(x.TopicID.Value) && (!difficulty.HasValue || x.DifficultyLevel == difficulty)
-                && x.Status != (int)QuizStatus.Deleted).ToListAsync();
+                 .Where(q => q.QuizTopics.Any(qt => topicIds.Contains(qt.TopicID))
+                    && (!difficulty.HasValue || q.DifficultyLevel == difficulty)
+                    && q.Status != (int)QuizStatus.Deleted)
+                 .Select(quiz => new QuizVM
+                 {
+                     QuizID = quiz.QuizID,
+                     Title = quiz.Title,
+                     Description = quiz.Description,
+                     DifficultyLevel = quiz.DifficultyLevel,
+                     TimeLimit = quiz.TimeLimit,
+                     Status = quiz.Status,
+                     CreateAt = quiz.CreateAt,
+                     UpdateAt = quiz.UpdateAt,
+                     UserID = quiz.UserID,
+                     TopicIDs = quiz.QuizTopics.Where(qt => topicIds.Contains(qt.TopicID))
+                            .Select(qt => qt.TopicID).ToList(),
+                     TopicNames = quiz.QuizTopics.Where(qt => topicIds.Contains(qt.TopicID))
+                            .Select(qt => qt.Topic.TopicName).ToList()
+                 })
+
+                  .ToListAsync();
             if (list.Count == 0) return ("No quiz found!", null);
 
             var mapper = _mapper.Map<List<QuizVM>>(list);
@@ -58,14 +84,14 @@ namespace API.Services
             return ("", mapper);
         }
 
-        public async Task<(string, QuizVM?)> GetByUserId(string userId)
+        public async Task<(string, List<QuizVM>?)> GetByUserId(string userId)
         {
             if (string.IsNullOrEmpty(userId)) return ("User Id was not found!", null);
 
-            var quiz = await _context.Quizzes.FirstOrDefaultAsync(x => x.UserID == userId);
-            if (quiz == null) return ("No quiz found!", null);
+            var list = await _context.Quizzes.Where(x => x.UserID == userId).ToListAsync();
+            if (list.Count == 0) return ("No quiz found!", null);
 
-            var mapper = _mapper.Map<QuizVM>(quiz);
+            var mapper = _mapper.Map<List<QuizVM>>(list);
             return ("", mapper);
         }
     }
